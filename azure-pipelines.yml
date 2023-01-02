@@ -34,7 +34,7 @@ variables:
 steps:
 - checkout: self
 #- checkout: buildapp
-- checkout: git://sample-project/$(repo)
+- checkout: github://sample-project/$(repo)
 
 - task: NuGetToolInstaller@1
 

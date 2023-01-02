@@ -32,9 +32,8 @@ variables:
   buildConfiguration: 'Release'
 
 steps:
-  - checkout: self
+- checkout: self
 
-settings:
 
 - task: NuGetToolInstaller@1
 

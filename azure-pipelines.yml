@@ -1,46 +1,76 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
+# ASP.NET Core (.NET Framework)
+# Build and test ASP.NET Core projects targeting the full .NET Framework.
+# Add steps that publish symbols, save build artifacts, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/dotnet-core
 
 resources:
  repositories:
-   - repository: buildapp
+   - repository: sonarqube
      type: github
      endpoint: giri347
-     name: giri347/buildapp
-   - repository: webappdeploy-AzureDevops
-     type: github
-     endpoint: giri347
-     name: giri347/webappdeploy-AzureDevops
+     name: giri347/sonarqube
+
+
 trigger:
-- main
+- none
 
-
-parameters:
-  - name: select
-    displayName: select_buildrepo
-    values:
-      - buildapp
-      - webappdeploy-AzureDevops
 pool:
   vmImage: 'windows-latest'
 
+
 variables:
-  solution: '$(Build.SourcesDirectory)/$(Repo)/**/*.csproj'
+  solution: '**/*.sln'
   buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
+  
 
 steps:
-- checkout: self
-#- checkout: buildapp
-- checkout: github://sample-project/$(repo)
+- checkout: sonarqube
+
 
 - task: NuGetToolInstaller@1
 
 - task: NuGetCommand@2
   inputs:
     command: 'restore'
-    restoreSolution: '**/*.sln'
-    feedsToUse: 'select'
+    restoreSolution: '$(solution)'
 
+
+
+- task: SonarCloudPrepare@1
+  inputs:
+    SonarCloud: 'Sonarcloud'
+    organization: 'giri347'
+    scannerMode: 'MSBuild'
+    projectKey: 'giri347_sonarqube'
+    projectName: 'sonarqube'
+- task: VSBuild@1
+
+  inputs:
+
+    solution: '$(solution)'
+
+    platform: '$(buildPlatform)'
+
+    configuration: '$(buildConfiguration)'
+- task: VSTest@2   
+  inputs:
+    testSelector: 'testAssemblies'
+    testAssemblyVer2: |
+      **\$(BuildConfiguration)\*test*.dll
+      !**\obj\**
+    searchFolder: '$(System.DefaultWorkingDirectory)'
+    codeCoverageEnabled: true
+    platform: '$(Buildplatform)'
+    configuration: '$(Buildconfiguration)'
+
+- task: SonarCloudAnalyze@1
+- task: SonarCloudPublish@1
+  inputs:
+    pollingTimeoutSec: '300'
+
+- task: PublishPipelineArtifact@1
+  inputs:
+    targetPath: '$(Pipeline.Workspace)'
+    artifact: 'sonarqube'
+    publishLocation: 'pipeline'
